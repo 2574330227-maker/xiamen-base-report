@@ -588,6 +588,12 @@
 
     function chartBar(id, labels, datasets, options = {}) {
       const el = document.getElementById(id);
+      if (!el || el.clientWidth === 0) return null; // 容器不可见，等下次 section 切换时重建
+      const existing = Chart.getChart(id);
+      if (existing) {
+        if (el.clientWidth > 0) { existing.resize(); return existing; }
+        existing.destroy();
+      }
       return new Chart(el, {
         type: "bar",
         data: { labels, datasets },
@@ -712,81 +718,102 @@
         { label: "去年同月", data: c.yoyDelivery.lastYear, backgroundColor: "#e3b56d", borderColor: "#9a7042", borderWidth: 1 },
         { label: "本月", data: c.yoyDelivery.current, backgroundColor: "#84b7c2", borderColor: "#245a6a", borderWidth: 1 }
       ], { title: "交付与效率指标同比对比", suffix: "%", unit: "%", min: 80, max: 102, beginAtZero: false });
-      new Chart(document.getElementById("chartSpecial"), {
-        type: "bar",
-        data: {
-          labels: REPORT.projects.map(p => p.name),
-          datasets: [{ label: "改善金额", data: REPORT.projects.map(p => p.amount), backgroundColor: ["#245a6a", "#53835f", "#9a7042", "#84b7c2", "#e3b56d", "#7d8e57", "#b15f45", "#7e8d94", "#a0a48e", "#5f6863"] }]
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false }, title: { display: true, text: "十大专项改善金额", color: "#262723", font: { size: 14, weight: "600" } }, customDatalabels: { unit: "万" } },
-          scales: { x: { beginAtZero: true, ticks: { callback: v => v+"万" }, grid: { color: "rgba(0,0,0,.06)" }, grace: "15%" }, y: { grid: { display: false } } }
+      const elSpecial = document.getElementById("chartSpecial");
+      if (elSpecial && elSpecial.clientWidth > 0) {
+        const existing = Chart.getChart("chartSpecial");
+        if (existing) { existing.resize(); } else {
+          new Chart(elSpecial, {
+            type: "bar",
+            data: {
+              labels: REPORT.projects.map(p => p.name),
+              datasets: [{ label: "改善金额", data: REPORT.projects.map(p => p.amount), backgroundColor: ["#245a6a", "#53835f", "#9a7042", "#84b7c2", "#e3b56d", "#7d8e57", "#b15f45", "#7e8d94", "#a0a48e", "#5f6863"] }]
+            },
+            options: {
+              indexAxis: "y", responsive: true, maintainAspectRatio: false,
+              plugins: { legend: { display: false }, title: { display: true, text: "十大专项改善金额", color: "#262723", font: { size: 14, weight: "600" } }, customDatalabels: { unit: "万" } },
+              scales: { x: { beginAtZero: true, ticks: { callback: v => v+"万" }, grid: { color: "rgba(0,0,0,.06)" }, grace: "15%" }, y: { grid: { display: false } } }
+            }
+          });
         }
-      });
+      }
 
       // 3.1 成本结构对比 (grouped horizontal bar)
       const cs = REPORT.profitLoss.costStruct;
-      new Chart(document.getElementById("chartCostStruct"), {
-        type: "bar",
-        data: {
-          labels: cs.map(d => d.item),
-          datasets: [
-            { label: "2025年", data: cs.map(d => d.prev), backgroundColor: "rgba(227,181,109,0.75)", borderColor: "#9a7042", borderWidth: 1 },
-            { label: "2026年", data: cs.map(d => d.cur), backgroundColor: "rgba(36,90,106,0.75)", borderColor: "#245a6a", borderWidth: 1 }
-          ]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: "top" }, title: { display: false }, customDatalabels: { unit: "%" } },
-          scales: {
-            x: { grid: { display: false } },
-            y: { ticks: { callback: v => v + "%" }, grid: { color: "rgba(0,0,0,.06)" }, stacked: false }
-          }
+      const elCS = document.getElementById("chartCostStruct");
+      if (elCS && elCS.clientWidth > 0) {
+        const existing = Chart.getChart("chartCostStruct");
+        if (existing) { existing.resize(); } else {
+          new Chart(elCS, {
+            type: "bar",
+            data: {
+              labels: cs.map(d => d.item),
+              datasets: [
+                { label: "2025年", data: cs.map(d => d.prev), backgroundColor: "rgba(227,181,109,0.75)", borderColor: "#9a7042", borderWidth: 1 },
+                { label: "2026年", data: cs.map(d => d.cur), backgroundColor: "rgba(36,90,106,0.75)", borderColor: "#245a6a", borderWidth: 1 }
+              ]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              plugins: { legend: { position: "top" }, title: { display: false }, customDatalabels: { unit: "%" } },
+              scales: {
+                x: { grid: { display: false } },
+                y: { ticks: { callback: v => v + "%" }, grid: { color: "rgba(0,0,0,.06)" }, stacked: false }
+              }
+            }
+          });
         }
-      });
+      }
 
       // 3.1 成本同比变动 (horizontal bar, all negative)
       const cc = REPORT.profitLoss.costChange;
       const ccColors = ["#b4472d","#b4472d","#b4472d","#9a7042","#53835f","#245a6a"];
-      new Chart(document.getElementById("chartCostChange"), {
-        type: "bar",
-        data: {
-          labels: cc.map(d => d.item),
-          datasets: [{ label: "同比变动", data: cc.map(d => d.val), backgroundColor: ccColors, borderColor: ccColors, borderWidth: 1 }]
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false }, title: { display: false }, customDatalabels: { unit: "万" } },
-          scales: {
-            x: { ticks: { callback: v => Math.round(v)+"万" }, grid: { color: "rgba(0,0,0,.06)" }, grace: "15%" },
-            y: { grid: { display: false } }
-          }
+      const elCC = document.getElementById("chartCostChange");
+      if (elCC && elCC.clientWidth > 0) {
+        const existing = Chart.getChart("chartCostChange");
+        if (existing) { existing.resize(); } else {
+          new Chart(elCC, {
+            type: "bar",
+            data: {
+              labels: cc.map(d => d.item),
+              datasets: [{ label: "同比变动", data: cc.map(d => d.val), backgroundColor: ccColors, borderColor: ccColors, borderWidth: 1 }]
+            },
+            options: {
+              indexAxis: "y",
+              responsive: true, maintainAspectRatio: false,
+              plugins: { legend: { display: false }, title: { display: false }, customDatalabels: { unit: "万" } },
+              scales: {
+                x: { ticks: { callback: v => Math.round(v)+"万" }, grid: { color: "rgba(0,0,0,.06)" }, grace: "15%" },
+                y: { grid: { display: false } }
+              }
+            }
+          });
         }
-      });
+      }
 
       // 3.2 课室利润增量
       const dp = REPORT.deptProfit.depts;
       const dpBgs = dp.map(d => d.profitInc>=0 ? "rgba(83,131,95,0.8)" : "rgba(180,71,45,0.8)");
-      new Chart(document.getElementById("chartDeptProfit"), {
-        type: "bar",
-        data: {
-          labels: dp.map(d => d.name),
-          datasets: [{ label: "利润增量", data: dp.map(d => d.profitInc), backgroundColor: dpBgs, borderColor: dpBgs, borderWidth: 1 }]
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false }, title: { display: true, text: "各课室利润增量对比", color: "#262723", font: { size: 14, weight: "600" } }, customDatalabels: { unit: "万" } },
-          scales: {
-            x: { ticks: { callback: v => v+"万" }, grid: { color: "rgba(0,0,0,.06)" }, grace: "15%" },
-            y: { grid: { display: false } }
-          }
+      const elDP = document.getElementById("chartDeptProfit");
+      if (elDP && elDP.clientWidth > 0) {
+        const existing = Chart.getChart("chartDeptProfit");
+        if (existing) { existing.resize(); } else {
+          new Chart(elDP, {
+            type: "bar",
+            data: {
+              labels: dp.map(d => d.name),
+              datasets: [{ label: "利润增量", data: dp.map(d => d.profitInc), backgroundColor: dpBgs, borderColor: dpBgs, borderWidth: 1 }]
+            },
+            options: {
+              indexAxis: "y", responsive: true, maintainAspectRatio: false,
+              plugins: { legend: { display: false }, title: { display: true, text: "各课室利润增量对比", color: "#262723", font: { size: 14, weight: "600" } }, customDatalabels: { unit: "万" } },
+              scales: {
+                x: { ticks: { callback: v => v+"万" }, grid: { color: "rgba(0,0,0,.06)" }, grace: "15%" },
+                y: { grid: { display: false } }
+              }
+            }
+          });
         }
-      });
+      }
     }
 
     document.getElementById("report-title").textContent = REPORT.title;
@@ -831,14 +858,28 @@
       current: 0,
       sections: Array.from(document.querySelectorAll(".section")),
       links: Array.from(document.querySelectorAll("#toc a")),
-      toggle: document.getElementById("toggle-all")
+      toggle: document.getElementById("toggle-all"),
+      chartsInited: new Set()
     };
 
     function resizeChartsSoon() {
       window.setTimeout(() => {
         if (!window.Chart || !Chart.instances) return;
-        Object.values(Chart.instances).forEach(chart => chart.resize());
-      }, 60);
+        Object.values(Chart.instances).forEach(chart => { chart.resize(); chart.update("none"); });
+      }, 200);
+    }
+
+    // 当 section 首次变为可见时，初始化其中的图表
+    function ensureSectionCharts(sectionIndex) {
+      if (deck.chartsInited.has(sectionIndex)) { resizeChartsSoon(); return; }
+      const sec = deck.sections[sectionIndex];
+      if (!sec) return;
+      // 确保 section 先可见，让浏览器完成 layout
+      window.setTimeout(() => {
+        initCharts();
+        deck.chartsInited.add(sectionIndex);
+        resizeChartsSoon();
+      }, 50);
     }
 
     function setDeckSection(index, updateHash = true) {
@@ -850,13 +891,18 @@
       deck.toggle.textContent = "显示全部";
       if (updateHash) history.replaceState(null, "", `#section-${nextIndex + 1}`);
       window.scrollTo({ top: 0, behavior: "smooth" });
-      resizeChartsSoon();
+      ensureSectionCharts(nextIndex);
     }
 
     function toggleAllSections() {
       const showingAll = document.body.classList.toggle("show-all");
       deck.toggle.textContent = showingAll ? "分页查看" : "显示全部";
-      resizeChartsSoon();
+      if (showingAll) {
+        // 显示全部时，为所有 section 初始化图表
+        window.setTimeout(() => { initCharts(); resizeChartsSoon(); }, 100);
+      } else {
+        resizeChartsSoon();
+      }
     }
 
     deck.links.forEach(link => {
@@ -875,11 +921,7 @@
     const initialMatch = location.hash.match(/^#section-(\d+)$/);
     const initialIndex = initialMatch ? Number(initialMatch[1]) - 1 : 0;
     setDeckSection(initialIndex, false);
-    // 延迟初始化图表，确保容器可见并有正确尺寸
-    window.setTimeout(() => {
-      initCharts();
-      resizeChartsSoon();
-    }, 100);
+    // setDeckSection 会触发 ensureSectionCharts，无需再次调用
 
     // ============================================================
     // 数据编辑器逻辑
