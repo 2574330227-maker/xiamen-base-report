@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>厦门基地运营分析报告</title>
-  <script src="./chart.umd.js"></script>
-  <script src="./xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -875,8 +875,11 @@
     const initialMatch = location.hash.match(/^#section-(\d+)$/);
     const initialIndex = initialMatch ? Number(initialMatch[1]) - 1 : 0;
     setDeckSection(initialIndex, false);
-    initCharts();
-    resizeChartsSoon();
+    // 延迟初始化图表，确保容器可见并有正确尺寸
+    window.setTimeout(() => {
+      initCharts();
+      resizeChartsSoon();
+    }, 100);
 
     // ============================================================
     // 数据编辑器逻辑
